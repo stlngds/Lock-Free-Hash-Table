@@ -1,5 +1,6 @@
-// lfht.cpp : This file contains the 'main' function. Program execution begins and ends there.
-//
+// Contributors: Grace Biggs
+// Adapted from Michael's "High performance dynamic lock-free hash tables and list-based sets":
+ https://doi.org/10.1145/564870.564881
 
 #include <iostream>
 

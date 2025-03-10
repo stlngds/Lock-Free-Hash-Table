@@ -9,6 +9,24 @@ The paper addresses the main drawbacks of prior lock-free algorithms, including 
 There are two kinds of lock-free algorithms: Array-based and list-based. Known array-based algos are generally impractical, as they inherently restrict their maximum size, and can't prevent duplicate keys from occupying multiple indices, requiring overallocation to guarantee lower bounds of a given set size. The Algorithm in question takes a list-based approach using CAS *or* SC/LL. 
 
 2. Background
-
+Explains how hash tables work, prior lock-free set algorithms, and approaches to memory management (namely why garbage collection and deferred freeing often isn't viable on top of being expensive). Solid review.
 
 3. The Algorithm
+We have an array T of size M, where each element in T is a pointer to a hash bucket (implemented as a linked list). Each node has four user-accessible fields:
+ Key: The key value.
+ Mark: Marked as deleted - indicates if the key in the node has been deleted from the set.
+ Next: Points to the next node.
+ Tag: Used to prevent ABA. 
+<Mark, Next, Tag> must occupy a contiguous aligned memory block that can be manipulated atomically via CAS or LL/SC. 
+
+The following operations are present in the algorithm:
+ Insert: Adds nodes via CAS after finding the correct position. Returns false if key is already present.
+ Delete: Marks nodes for removal, ensuring thread safety. Returns false if key isn't present.
+ Search: Traverses the list using Find(), which returns a bool indicating if a node with a matching key was found. When Find() detects a change in the previous node mid-way through traversal, it starts over from the beginning.
+Pseudocode is available in the paper for us to adapt. The paper also discusses other memory management models, though this doesn't seem relevant to us.
+
+4. Correctness
+Informal proof sketches are provided here. I don't think we really need to worry about this.
+
+5. Performance
+Shows performance of each algorithm with respect to the number of threads and the average processing time per operation, across a range of cases. The new algorithm beats the previous best lock-based and lock-free implementations handily.
