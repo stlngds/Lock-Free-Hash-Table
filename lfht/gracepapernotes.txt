@@ -1,0 +1,14 @@
+Grace Biggs
+3/10/2025
+CS 593
+High Performance Dynamic Lock-Free Hash Tables and List-Based Sets Notes
+
+1. Abstract/Intro
+The paper addresses the main drawbacks of prior lock-free algorithms, including "size inflexibility, dependence on atomic primitives not supported on any current processor architecture, and dependence on highly-inefficient or blocking memory management techniques." Michael claims the algorithm is lock-free, dynamic, linearizable, and space-efficient, and handily outperforms the then best-known shared hash table implementations. The paper then intros by explaining why hash tables are useful, why concurrent access is hard, and why lock-free implementations are desirable over lock-based ones.
+
+There are two kinds of lock-free algorithms: Array-based and list-based. Known array-based algos are generally impractical, as they inherently restrict their maximum size, and can't prevent duplicate keys from occupying multiple indices, requiring overallocation to guarantee lower bounds of a given set size. The Algorithm in question takes a list-based approach using CAS *or* SC/LL. 
+
+2. Background
+
+
+3. The Algorithm
