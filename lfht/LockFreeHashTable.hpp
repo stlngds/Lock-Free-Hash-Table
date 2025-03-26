@@ -63,7 +63,6 @@ public:
 			new_node->next.store(MarkedPtr::encode(curr, false, 0));
 
 			MarkedPtr expected = MarkedPtr::encode(curr, false, prev->next.load().tag);
-
 			MarkedPtr desired = MarkedPtr::encode(new_node, false, expected.tag + 1);
 
 			if (prev->next.compare_exchange_strong(expected, desired)) {
@@ -112,7 +111,7 @@ public:
 private:
 	std::pair<Node<K, V>*, Node<K, V>*> search(size_t idx, K key) {
 		while (true) {
-			Node<K, V>* prev = &dummy_head;
+			Node<K, V>* prev = &buckets[idx];
 			Node<K, V>* curr = get_node(buckets[idx].load());
 
 			while (curr != nullptr) {
