@@ -131,7 +131,7 @@
     <ClCompile Include="LockFreeHashTable.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="LockFreeHashTable.h" />
+    <ClInclude Include="LockFreeHashTable.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
