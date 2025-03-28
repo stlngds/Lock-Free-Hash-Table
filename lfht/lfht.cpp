@@ -7,5 +7,9 @@
 
 int main()
 {
-    std::cout << "Hello World!\n";
+    LockFreeHashTable<int, int> ht;
+    ht.insert(42, 100);
+    std::cout << "Contains 42? " << ht.contains(42) << std::endl; // 1
+    ht.remove(42);
+    std::cout << "Contains 42? " << ht.contains(42) << std::endl; // 0
 }
