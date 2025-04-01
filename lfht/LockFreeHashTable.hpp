@@ -83,7 +83,7 @@ public:
 
             auto [prev_ptr, curr] = find_bucket(array, idx, key);
 
-            // Key exists, do "nothing" (deallocate new_node first)
+            // Key exists, do "nothing" (deallocate new_node first). TODO: MemoryPool or Freelist this instead.
             if (curr && curr->key == key) {
                 delete new_node;
                 return false;
@@ -199,7 +199,7 @@ private:
             }
 
             if (current_array.compare_exchange_strong(old_array, new_array)) {
-                delete old_array; // In production: use hazard pointers
+                delete old_array; // TODO: Hazard pointer implementation with this?
             }
             else {
                 delete new_array;
