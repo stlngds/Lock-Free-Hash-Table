@@ -129,7 +129,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="lfht.cpp" />
+    <ClCompile Include="main.cpp" />
     <ClCompile Include="LockFreeHashTable.cpp" />
   </ItemGroup>
   <ItemGroup>
