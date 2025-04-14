@@ -16,7 +16,8 @@ public:
 		m_pTestSettings(setting),
 		m_keyInput(0),
 		m_numThreadsSlider(4),
-		m_bucketCountSlider(16)
+		m_bucketCountSlider(16),
+		m_limitOps(true)
 	{
 	}
 
@@ -101,9 +102,10 @@ private:
 	TestSettings* m_pTestSettings;
 
 	int m_keyInput;
-	char m_valueInput[32] = "value";
 	int m_numThreadsSlider;
 	int m_bucketCountSlider;
+	char m_valueInput[32] = "value";
+	bool m_limitOps;
 
 	void simulationControls()
 	{
@@ -153,6 +155,13 @@ private:
 			}
 			m_pTestSettings->GetWorkers().clear();
 		}
+
+		ImGui::SameLine();
+
+		if (ImGui::Checkbox("Limit Ops Speed", &m_limitOps))
+		{
+			m_pTestSettings->SetLimitOps(!m_limitOps);
+		}
 		ImGui::End();
 	}
 	 
@@ -195,7 +204,7 @@ private:
 		auto loadFactorHistory = m_pTestSettings->GetLoadFactorHistory();
 		if (!loadFactorHistory.empty())
 		{
-			ImGui::PlotLines("Active Load Factor", loadFactorHistory.data(),
+			ImGui::PlotLines("Load Factor", loadFactorHistory.data(),
 				static_cast<int>(loadFactorHistory.size()),
 				0, "Active Load Factor", 0.0f, 5.0f, ImVec2(600, 200));
 		}

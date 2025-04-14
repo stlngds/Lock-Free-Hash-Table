@@ -59,7 +59,14 @@ public:
 			}
 			m_threadOpCounts[threadID].fetch_add(1);
 			// This prevents the worker threads from running too fast and overloading the CPU.
-			std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			if (m_limitOps.load())
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+			}
+			else
+			{
+				std::this_thread::sleep_for(std::chrono::milliseconds(50));
+			}
 		}
 	}
 
@@ -171,6 +178,13 @@ public:
 		m_runWorkers.store(run);
 	}
 
+	// @brief Set the limit operations flag.
+	// @param limit Whether to limit operations or not.
+	inline void SetLimitOps(bool limit)
+	{
+		m_limitOps.store(limit);
+	}
+
 	// @brief Set thread ops per second.
 	// @param threadID The index of the thread.
 	// @param ops The operations per second to set.
@@ -252,6 +266,7 @@ private:
 	std::atomic<int> m_opInsertCount;
 	std::atomic<int> m_opRemoveCount;
 	std::atomic<bool> m_runWorkers;
+	std::atomic<bool> m_limitOps;
 	std::chrono::steady_clock::time_point m_lastOpsUpdateTime; 
 	int m_maxThreads;
 };
