@@ -3,7 +3,7 @@
 #include <thread>
 #include <atomic>
 #include <vector>
-
+#include <tuple>
 #include "LockFreeHashTable.hpp"
 
 template<typename K, typename V>
@@ -27,15 +27,10 @@ public:
         bool result = m_table.insert(key, value);
         if (result) 
         {
+            updateBucketCount();
             size_t bucketIndex = key % m_numBuckets;
             std::lock_guard<std::mutex> lock(m_shadowMutex);
             m_shadowBuckets[bucketIndex].push_back(std::make_tuple(key, value, false));
-            
-			auto bucketSize = m_table.getBucketSize();
-            if (bucketSize > m_numBuckets)
-            {
-                AdjustBucketCount(bucketSize);
-            }
         }
 
         return result;
@@ -49,6 +44,7 @@ public:
         bool result = m_table.remove(key);
         if (result) 
         {
+            updateBucketCount();
             size_t bucketIndex = key % m_numBuckets;
             std::lock_guard<std::mutex> lock(m_shadowMutex);
             // Mark the first matching active node as removed.
@@ -59,13 +55,7 @@ public:
                     std::get<2>(node) = true;
                     break;
                 }
-            }
-
-			auto bucketSize = m_table.getBucketSize();
-			if (bucketSize < m_numBuckets / 2)
-			{
-				AdjustBucketCount(bucketSize);
-			}
+            }   
         }
         return result;
     }
@@ -92,25 +82,6 @@ public:
         }
         m_totalRemoved.fetch_add(collected);
         return collected;
-    }
-
-	// @brief Adjust the number of buckets.
-	// @param newCount The new number of buckets.
-    void AdjustBucketCount(size_t newCount)
-    {
-        std::lock_guard<std::mutex> lock(m_shadowMutex);
-        std::vector<std::vector<std::tuple<K, V, bool>>> newShadow(newCount);
-        for (const auto& bucket : m_shadowBuckets) 
-        {
-            for (const auto& node : bucket) 
-            {
-                int key = std::get<0>(node);
-                size_t newBucketIndex = key % newCount;
-                newShadow[newBucketIndex].push_back(node);
-            }
-        }
-        m_shadowBuckets = std::move(newShadow);
-        m_numBuckets = newCount;
     }
 
 	// @brief Get a snapshot of the current state of the shadow buckets.
@@ -156,11 +127,50 @@ public:
 	{
 		return m_numBuckets;
 	}
+
+	// @brief Reset the hash table.
+	// This function resets the hash table to its initial state.
+	void Reset()
+	{
+		m_table.reset();
+		ClearShadow();
+		updateBucketCount();
+	}
+	
 private:
     LockFreeHashTable<K, V> m_table;
     std::vector<std::vector<std::tuple<K, V, bool>>> m_shadowBuckets;
     std::mutex m_shadowMutex;
     std::atomic<int> m_totalRemoved;
     size_t m_numBuckets;
+
+    // @brief Adjust the number of buckets.
+    // @param newCount The new number of buckets.
+    inline void adjustBucketCount(size_t newCount)
+    {
+        std::lock_guard<std::mutex> lock(m_shadowMutex);
+        std::vector<std::vector<std::tuple<K, V, bool>>> newShadow(newCount);
+        for (const auto& bucket : m_shadowBuckets)
+        {
+            for (const auto& node : bucket)
+            {
+                int key = std::get<0>(node);
+                size_t newBucketIndex = key % newCount;
+                newShadow[newBucketIndex].push_back(node);
+            }
+        }
+        m_shadowBuckets = std::move(newShadow);
+        m_numBuckets = newCount;
+    }
+
+    // @brief Keep track of the number copied buckets.
+    inline void updateBucketCount()
+    {
+        auto bucketSize = m_table.getBucketSize();
+        if (bucketSize != m_numBuckets)
+        {
+            adjustBucketCount(bucketSize);
+        }
+    }
 };
 

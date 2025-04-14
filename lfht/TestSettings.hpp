@@ -1,6 +1,5 @@
 #pragma once
 #include "VisualLockFreeHashTable.hpp"
-#include <tuple>
 #include <cstdio>
 #include <string>
 #include <sstream>
@@ -42,10 +41,10 @@ public:
 	void WorkerFunction(int threadID)
 	{
 		std::mt19937 rng(threadID + std::random_device{}());
-		std::uniform_int_distribution<int> distKey(0, 100);
 		std::uniform_int_distribution<int> distOp(0, 1);
 		while (m_runWorkers.load())
 		{
+			std::uniform_int_distribution<int> distKey(0, m_keyLimit);
 			int key = distKey(rng);
 			if (distOp(rng) == 0)
 			{
@@ -239,7 +238,7 @@ public:
 		std::fill(m_lastThreadCounts.begin(), m_lastThreadCounts.end(), 0);
 		std::fill(m_threadOpsPerSec.begin(), m_threadOpsPerSec.end(), 0);
 		m_loadFactorHistory.clear();
-		m_pVisualTable->ClearShadow();
+		m_pVisualTable->Reset();
 	}
 
 	// @brief Get the last update time for operations.
@@ -256,6 +255,13 @@ public:
 		m_lastOpsUpdateTime = time;
 	}
 
+	// @brief Set the key limit for operations.
+	// @param limit The key limit to set.
+	inline void SetKeyLimit(int limit)
+	{
+		m_keyLimit = limit;
+	}
+
 private:
 	VisualLockFreeHashTable<int, std::string>* m_pVisualTable;
 	std::vector<std::atomic<int>> m_threadOpCounts;
@@ -269,5 +275,6 @@ private:
 	std::atomic<bool> m_limitOps;
 	std::chrono::steady_clock::time_point m_lastOpsUpdateTime; 
 	int m_maxThreads;
+	int m_keyLimit = 64;
 };
 

@@ -15,7 +15,8 @@ public:
 		m_pWindow(nullptr),
 		m_pTestSettings(setting),
 		m_keyInput(0),
-		m_limitOps(true)
+		m_limitOps(true),
+		m_keyRange(64)
 	{
 		m_numThreadsSlider = 4;
 		m_bucketCountSlider = m_pTestSettings->GetVisualTable()->GetBucketCount();
@@ -104,8 +105,10 @@ private:
 	int m_keyInput;
 	int m_numThreadsSlider;
 	int m_bucketCountSlider;
+	int m_keyRange;
 	char m_valueInput[32] = "value";
 	bool m_limitOps;
+
 
 	void simulationControls()
 	{
@@ -123,6 +126,13 @@ private:
 			if (m_pTestSettings->GetVisualTable()->Remove(m_keyInput))
 				m_pTestSettings->AddRemoveOpCount(1);
 		}
+		ImGui::Separator();
+
+		if (ImGui::SliderInt("Key Range", &m_keyRange, 64, 1024))
+		{
+			m_pTestSettings->SetKeyLimit(m_keyRange);
+		}
+
 		ImGui::Separator();
 
 		ImGui::SliderInt("Worker Threads", &m_numThreadsSlider, 1, 16);
@@ -150,7 +160,7 @@ private:
 			m_pTestSettings->GetWorkers().clear();
 		}
 
-		ImGui::Separator();
+		ImGui::SameLine();
 
 		if (ImGui::Checkbox("Limit Ops Speed", &m_limitOps))
 		{
@@ -191,19 +201,58 @@ private:
 
 		ImGui::End();
 	}
+
 	void loadFactorGraph()
 	{
 		ImGui::Begin("Load Factor Graph");
+
 		m_pTestSettings->UpdateLoadFactorHistory();
-		auto loadFactorHistory = m_pTestSettings->GetLoadFactorHistory();
+		const auto& loadFactorHistory = m_pTestSettings->GetLoadFactorHistory();
+
 		if (!loadFactorHistory.empty())
 		{
-			ImGui::PlotLines("Load Factor", loadFactorHistory.data(),
-				static_cast<int>(loadFactorHistory.size()),
-				0, "Active Load Factor", 0.0f, 5.0f, ImVec2(600, 200));
+			constexpr float lowerBound = 0.25f;
+			constexpr float upperBound = 2.0f;
+			const int numPoints = static_cast<int>(loadFactorHistory.size());
+			const float latestValue = loadFactorHistory.back();
+
+			ImVec2 graphSize = ImVec2(600, 200);
+			ImGui::PlotLines("Load Factor", loadFactorHistory.data(), numPoints, 0,
+				"Active Load Factor", 0.0f, 5.0f, graphSize);
+
+			ImDrawList* drawList = ImGui::GetWindowDrawList();
+			ImVec2 graphPos = ImGui::GetItemRectMin();
+			ImVec2 graphEnd = ImGui::GetItemRectMax();
+
+			float pointSpacing = graphSize.x / (numPoints - 1);
+			float graphHeight = graphSize.y;
+
+			float normalizedY = 1.0f - (latestValue / 5.0f); 
+			float latestY = graphPos.y + normalizedY * graphHeight;
+			float latestX = graphEnd.x;
+
+			char buf[32];
+			snprintf(buf, sizeof(buf), "%.2f", latestValue);
+			drawList->AddText(ImVec2(latestX - 30, latestY - 20), IM_COL32(255, 255, 0, 255), buf);
+
+			// Draw lower bound line
+			float lowerY = graphPos.y + (1.0f - lowerBound / 5.0f) * graphHeight;
+			drawList->AddLine(ImVec2(graphPos.x, lowerY), ImVec2(graphEnd.x - 85, lowerY), IM_COL32(255, 0, 0, 200), 2.0f);
+			char lbbuf[32];
+			snprintf(lbbuf, sizeof(lbbuf), "%.2f", lowerBound);
+			drawList->AddText(ImVec2(graphEnd.x - 75, lowerY - 20), IM_COL32(255, 0, 0, 255), lbbuf);
+
+			// Draw upper bound line
+			float upperY = graphPos.y + (1.0f - upperBound / 5.0f) * graphHeight;
+			drawList->AddLine(ImVec2(graphPos.x, upperY), ImVec2(graphEnd.x - 85, upperY), IM_COL32(0, 255, 0, 200), 2.0f);
+			char ubbuf[32];
+			snprintf(ubbuf, sizeof(ubbuf), "%.2f", upperBound);
+			drawList->AddText(ImVec2(graphEnd.x - 75, upperY - 20), IM_COL32(0, 255, 0, 255), ubbuf);
 		}
+
 		ImGui::End();
 	}
+
 	void bucketHistogram()
 	{
 		ImGui::Begin("Bucket Histogram");
