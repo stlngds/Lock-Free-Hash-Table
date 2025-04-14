@@ -147,6 +147,10 @@ public:
         return (curr && curr->key == key);
     }
 
+    size_t getBucketSize()
+    {
+        return current_array.load()->size;
+    }
 private:
     size_t hash(K key, size_t size) const {
         return std::hash<K>{}(key) % size;

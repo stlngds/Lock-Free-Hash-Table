@@ -10,11 +10,12 @@ template<typename K, typename V>
 class VisualLockFreeHashTable 
 {
 public:    
-    VisualLockFreeHashTable(size_t initBuckets = 16) :
-        m_numBuckets(initBuckets)
+    VisualLockFreeHashTable()
     {
+		m_numBuckets = m_table.getBucketSize();
         m_shadowBuckets.resize(m_numBuckets);
         m_totalRemoved.store(0);
+
     }
 
     // @brief Insert operation.
@@ -24,11 +25,19 @@ public:
     bool Insert(const K& key, const V& value)
     {
         bool result = m_table.insert(key, value);
-        if (result) {
+        if (result) 
+        {
             size_t bucketIndex = key % m_numBuckets;
             std::lock_guard<std::mutex> lock(m_shadowMutex);
             m_shadowBuckets[bucketIndex].push_back(std::make_tuple(key, value, false));
+            
+			auto bucketSize = m_table.getBucketSize();
+            if (bucketSize > m_numBuckets)
+            {
+                AdjustBucketCount(bucketSize);
+            }
         }
+
         return result;
     }
 
@@ -38,16 +47,25 @@ public:
     bool Remove(const K& key)
     {
         bool result = m_table.remove(key);
-        if (result) {
+        if (result) 
+        {
             size_t bucketIndex = key % m_numBuckets;
             std::lock_guard<std::mutex> lock(m_shadowMutex);
             // Mark the first matching active node as removed.
-            for (auto& node : m_shadowBuckets[bucketIndex]) {
-                if (std::get<0>(node) == key && !std::get<2>(node)) {
+            for (auto& node : m_shadowBuckets[bucketIndex]) 
+            {
+                if (std::get<0>(node) == key && !std::get<2>(node)) 
+                {
                     std::get<2>(node) = true;
                     break;
                 }
             }
+
+			auto bucketSize = m_table.getBucketSize();
+			if (bucketSize < m_numBuckets / 2)
+			{
+				AdjustBucketCount(bucketSize);
+			}
         }
         return result;
     }
@@ -59,12 +77,15 @@ public:
         int collected = 0;
         std::lock_guard<std::mutex> lock(m_shadowMutex);
         for (auto& bucket : m_shadowBuckets) {
-            for (auto it = bucket.begin(); it != bucket.end(); ) {
-                if (std::get<2>(*it)) { // If marked as removed
+            for (auto it = bucket.begin(); it != bucket.end(); ) 
+            {
+                if (std::get<2>(*it)) 
+                { 
                     ++collected;
                     it = bucket.erase(it);
                 }
-                else {
+                else 
+                {
                     ++it;
                 }
             }
@@ -79,8 +100,10 @@ public:
     {
         std::lock_guard<std::mutex> lock(m_shadowMutex);
         std::vector<std::vector<std::tuple<K, V, bool>>> newShadow(newCount);
-        for (const auto& bucket : m_shadowBuckets) {
-            for (const auto& node : bucket) {
+        for (const auto& bucket : m_shadowBuckets) 
+        {
+            for (const auto& node : bucket) 
+            {
                 int key = std::get<0>(node);
                 size_t newBucketIndex = key % newCount;
                 newShadow[newBucketIndex].push_back(node);
@@ -103,7 +126,8 @@ public:
     void ClearShadow()
     {
         std::lock_guard<std::mutex> lock(m_shadowMutex);
-        for (auto& bucket : m_shadowBuckets) {
+        for (auto& bucket : m_shadowBuckets) 
+        {
             bucket.clear();
         }
         m_totalRemoved.store(0);
@@ -115,8 +139,10 @@ public:
     {
         std::lock_guard<std::mutex> lock(m_shadowMutex);
         int activeNodes = 0;
-        for (const auto& bucket : m_shadowBuckets) {
-            for (const auto& node : bucket) {
+        for (const auto& bucket : m_shadowBuckets) 
+        {
+            for (const auto& node : bucket) 
+            {
                 if (!std::get<2>(node))
                     activeNodes++;
             }

@@ -15,10 +15,10 @@ public:
 		m_pWindow(nullptr),
 		m_pTestSettings(setting),
 		m_keyInput(0),
-		m_numThreadsSlider(4),
-		m_bucketCountSlider(16),
 		m_limitOps(true)
 	{
+		m_numThreadsSlider = 4;
+		m_bucketCountSlider = m_pTestSettings->GetVisualTable()->GetBucketCount();
 	}
 
 	~UI()
@@ -125,12 +125,6 @@ private:
 		}
 		ImGui::Separator();
 
-		if (ImGui::SliderInt("Number of Buckets", reinterpret_cast<int*>(&m_bucketCountSlider), 16, 256))
-		{
-			m_pTestSettings->GetVisualTable()->AdjustBucketCount(static_cast<size_t>(m_bucketCountSlider));
-		}
-
-		ImGui::Separator();
 		ImGui::SliderInt("Worker Threads", &m_numThreadsSlider, 1, 16);
 		if (ImGui::Button("Start Workers"))
 		{
@@ -156,7 +150,7 @@ private:
 			m_pTestSettings->GetWorkers().clear();
 		}
 
-		ImGui::SameLine();
+		ImGui::Separator();
 
 		if (ImGui::Checkbox("Limit Ops Speed", &m_limitOps))
 		{

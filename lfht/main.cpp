@@ -3,7 +3,8 @@
 
 int main(int, char**)
 {
-	UI ui(new TestSettings(16));
+	int maxThreads = 16;
+	UI ui(new TestSettings(maxThreads));
 
 	if (!ui.Init())
 	{

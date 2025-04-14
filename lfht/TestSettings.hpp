@@ -18,7 +18,7 @@ class TestSettings
 public:
 	TestSettings(int maxThreads): m_maxThreads(maxThreads), m_threadOpCounts(maxThreads)
 	{
-		m_pVisualTable = new VisualLockFreeHashTable<int, std::string>(m_maxThreads);
+		m_pVisualTable = new VisualLockFreeHashTable<int, std::string>();
 		m_lastThreadCounts.resize(m_maxThreads, 0);
 		m_threadOpsPerSec.resize(m_maxThreads, 0);
 		m_runWorkers.store(false);
@@ -61,7 +61,7 @@ public:
 			// This prevents the worker threads from running too fast and overloading the CPU.
 			if (m_limitOps.load())
 			{
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				std::this_thread::sleep_for(std::chrono::microseconds(5));
 			}
 			else
 			{
