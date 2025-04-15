@@ -21,6 +21,8 @@ public:
 		m_lastThreadCounts.resize(m_maxThreads, 0);
 		m_threadOpsPerSec.resize(m_maxThreads, 0);
 		m_runWorkers.store(false);
+		m_keyLimit = 64;
+		m_workerType = 0;
 
 		m_opInsertCount.store(0);
 		m_opRemoveCount.store(0);
@@ -46,16 +48,32 @@ public:
 		{
 			std::uniform_int_distribution<int> distKey(0, m_keyLimit);
 			int key = distKey(rng);
-			if (distOp(rng) == 0)
+
+			if (m_workerType == 0)
+			{
+				if (distOp(rng) == 0)
+				{
+					if (m_pVisualTable->Insert(key, "val"))
+						m_opInsertCount.fetch_add(1);
+				}
+				else
+				{
+					if (m_pVisualTable->Remove(key))
+						m_opRemoveCount.fetch_add(1);
+				}
+			}
+			else if (m_workerType == 1)
 			{
 				if (m_pVisualTable->Insert(key, "val"))
 					m_opInsertCount.fetch_add(1);
 			}
 			else
 			{
+
 				if (m_pVisualTable->Remove(key))
 					m_opRemoveCount.fetch_add(1);
 			}
+			
 			m_threadOpCounts[threadID].fetch_add(1);
 			// This prevents the worker threads from running too fast and overloading the CPU.
 			if (m_limitOps.load())
@@ -184,6 +202,13 @@ public:
 		m_limitOps.store(limit);
 	}
 
+	// @brief Set the worker type.
+	// @param type The type of worker to set.
+	inline void SetWorkerType(int type)
+	{
+		m_workerType = type;
+	}
+
 	// @brief Set thread ops per second.
 	// @param threadID The index of the thread.
 	// @param ops The operations per second to set.
@@ -275,6 +300,7 @@ private:
 	std::atomic<bool> m_limitOps;
 	std::chrono::steady_clock::time_point m_lastOpsUpdateTime; 
 	int m_maxThreads;
-	int m_keyLimit = 64;
+	int m_keyLimit;
+	int m_workerType;
 };
 

@@ -7,6 +7,8 @@
 #include <chrono>
 #include "TestSettings.hpp"
 
+static const char* TYPE_OPTIONS[] = { "Random", "Insert", "Remove" };
+
 class UI
 {
 public:
@@ -20,6 +22,7 @@ public:
 	{
 		m_numThreadsSlider = 4;
 		m_bucketCountSlider = m_pTestSettings->GetVisualTable()->GetBucketCount();
+		m_currentType = 0;
 	}
 
 	~UI()
@@ -108,13 +111,14 @@ private:
 	int m_keyRange;
 	char m_valueInput[32] = "value";
 	bool m_limitOps;
-
+	int m_currentType;
 
 	void simulationControls()
 	{
 		ImGui::Begin("Simulation Controls");
 		ImGui::InputInt("Key", &m_keyInput);
 		ImGui::InputText("Value", m_valueInput, IM_ARRAYSIZE(m_valueInput));
+		ImGui::SameLine();
 		if (ImGui::Button("Insert"))
 		{
 			if (m_pTestSettings->GetVisualTable()->Insert(m_keyInput, m_valueInput))
@@ -128,12 +132,17 @@ private:
 		}
 		ImGui::Separator();
 
-		if (ImGui::SliderInt("Key Range", &m_keyRange, 64, 1024))
+		if (ImGui::SliderInt("Key Range", &m_keyRange, 32, 1024))
 		{
 			m_pTestSettings->SetKeyLimit(m_keyRange);
 		}
 
 		ImGui::Separator();
+
+		if (ImGui::Combo("Worker Type", &m_currentType, TYPE_OPTIONS, IM_ARRAYSIZE(TYPE_OPTIONS)))
+		{
+			m_pTestSettings->SetWorkerType(m_currentType);
+		}
 
 		ImGui::SliderInt("Worker Threads", &m_numThreadsSlider, 1, 16);
 		if (ImGui::Button("Start Workers"))
@@ -236,18 +245,20 @@ private:
 			drawList->AddText(ImVec2(latestX - 30, latestY - 20), IM_COL32(255, 255, 0, 255), buf);
 
 			// Draw lower bound line
+			auto colorBlindRed = IM_COL32(214, 40, 40, 255);
 			float lowerY = graphPos.y + (1.0f - lowerBound / 5.0f) * graphHeight;
-			drawList->AddLine(ImVec2(graphPos.x, lowerY), ImVec2(graphEnd.x - 85, lowerY), IM_COL32(255, 0, 0, 200), 2.0f);
+			drawList->AddLine(ImVec2(graphPos.x, lowerY), ImVec2(graphEnd.x - 85, lowerY), colorBlindRed, 2.0f);
 			char lbbuf[32];
 			snprintf(lbbuf, sizeof(lbbuf), "%.2f", lowerBound);
-			drawList->AddText(ImVec2(graphEnd.x - 75, lowerY - 20), IM_COL32(255, 0, 0, 255), lbbuf);
+			drawList->AddText(ImVec2(graphEnd.x - 75, lowerY - 20), colorBlindRed, lbbuf);
 
 			// Draw upper bound line
+			auto colorBlindGreen = IM_COL32(0, 127, 95, 255);
 			float upperY = graphPos.y + (1.0f - upperBound / 5.0f) * graphHeight;
-			drawList->AddLine(ImVec2(graphPos.x, upperY), ImVec2(graphEnd.x - 85, upperY), IM_COL32(0, 255, 0, 200), 2.0f);
+			drawList->AddLine(ImVec2(graphPos.x, upperY), ImVec2(graphEnd.x - 85, upperY), colorBlindGreen, 2.0f);
 			char ubbuf[32];
 			snprintf(ubbuf, sizeof(ubbuf), "%.2f", upperBound);
-			drawList->AddText(ImVec2(graphEnd.x - 75, upperY - 20), IM_COL32(0, 255, 0, 255), ubbuf);
+			drawList->AddText(ImVec2(graphEnd.x - 75, upperY - 20), colorBlindGreen, ubbuf);
 		}
 
 		ImGui::End();
