@@ -116,9 +116,11 @@ private:
 	void simulationControls()
 	{
 		ImGui::Begin("Simulation Controls");
+		ImGui::SetNextItemWidth(100);
 		ImGui::InputInt("Key", &m_keyInput);
-		ImGui::InputText("Value", m_valueInput, IM_ARRAYSIZE(m_valueInput));
 		ImGui::SameLine();
+		ImGui::SetNextItemWidth(100);
+		ImGui::InputText("Value", m_valueInput, IM_ARRAYSIZE(m_valueInput));
 		if (ImGui::Button("Insert"))
 		{
 			if (m_pTestSettings->GetVisualTable()->Insert(m_keyInput, m_valueInput))
@@ -138,8 +140,8 @@ private:
 		}
 
 		ImGui::Separator();
-
-		if (ImGui::Combo("Worker Type", &m_currentType, TYPE_OPTIONS, IM_ARRAYSIZE(TYPE_OPTIONS)))
+		ImGui::SetNextItemWidth(100);
+		if (ImGui::Combo("Operation Type", &m_currentType, TYPE_OPTIONS, IM_ARRAYSIZE(TYPE_OPTIONS)))
 		{
 			m_pTestSettings->SetWorkerType(m_currentType);
 		}
