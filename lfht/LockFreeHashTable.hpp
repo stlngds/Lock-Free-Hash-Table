@@ -219,6 +219,31 @@ public:
         return (curr && curr->key == key);
     }
 
+	// @brief Get the current bucket size.
+	// @return The current bucket size.
+    size_t getBucketSize()
+    {
+        return current_array.load()->size;
+    }
+
+	// @brief Re-initialize the hash table.
+	// This function resets the hash table to its initial state.
+    void reset() {
+        BucketArray<K, V>* old_array = current_array.exchange(new BucketArray<K, V>(MIN_BUCKETS));
+        count.store(0);
+
+        // Walk through old buckets and delete nodes
+        for (auto& head : old_array->buckets) {
+            Node<K, V>* curr = get_node(head.load());
+            while (curr) {
+                Node<K, V>* next = get_node(curr->next.load());
+                delete curr;
+                curr = next;
+            }
+        }
+
+        delete old_array;
+    }
 private:
     //@brief Hash function to map a key to an index in the bucket array.
     //@param key The key to hash.
